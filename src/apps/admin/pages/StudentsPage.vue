@@ -2,9 +2,14 @@
   <div class="students-page">
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h2>Data Siswa</h2>
-      <button class="btn btn-danger" @click="openModal()">
-        <i class="bi bi-plus-circle me-2"></i>Tambah Siswa
-      </button>
+      <div class="d-flex gap-2">
+        <button class="btn btn-success" @click="openImportModal">
+          <i class="bi bi-file-earmark-excel me-2"></i>Import dari Excel
+        </button>
+        <button class="btn btn-danger" @click="openModal()">
+          <i class="bi bi-plus-circle me-2"></i>Tambah Siswa
+        </button>
+      </div>
     </div>
 
     <!-- Filters -->
@@ -85,12 +90,13 @@
                 <th>Tingkat</th>
                 <th>Kelas</th>
                 <th>Jurusan</th>
+                <th>Dokumen</th>
                 <th>Aksi</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="filteredStudents.length === 0">
-                <td colspan="11" class="text-center text-muted">Tidak ada data siswa</td>
+                <td colspan="12" class="text-center text-muted">Tidak ada data siswa</td>
               </tr>
               <tr v-for="(student, index) in paginatedStudents" :key="student.id">
                 <td>{{ (currentPage - 1) * perPage + index + 1 }}</td>
@@ -113,6 +119,23 @@
                 <td>{{ getClassName(student.class_id) }}</td>
                 <td>{{ getDepartmentName(student.department_id) }}</td>
                 <td>
+                  <button 
+                    class="btn btn-sm btn-outline-info" 
+                    @click="goToDocuments(student)"
+                    title="Kelola Dokumen"
+                  >
+                    <i class="bi bi-file-earmark-text"></i>
+                    Dokumen
+                  </button>
+                </td>
+                <td>
+                  <button 
+                    class="btn btn-sm btn-outline-success me-1" 
+                    @click="$router.push(`/admin/students/${student.id}`)"
+                    title="Detail & Orang Tua"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
                   <button 
                     class="btn btn-sm btn-outline-primary me-1" 
                     @click="openModal(student)"
@@ -161,6 +184,9 @@
         </div>
       </div>
     </div>
+
+    <!-- Import Modal -->
+    <ImportStudentsModal ref="importModal" @imported="handleImported" />
 
     <!-- Modal Form -->
     <div 
@@ -386,15 +412,18 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { Modal } from 'bootstrap'
-import studentsService from '../../../shared/services/studentsService'
+import studentsService from '../services/studentService'
 import gradesService from '../services/gradesService'
 import classesService from '../services/classesService'
 import departmentsService from '../services/departmentsService'
 import academicYearsService from '../services/academicYearsService'
 import { useAuthStore } from '../../auth/store/authStore'
+import ImportStudentsModal from '../components/students/ImportStudentsModal.vue'
 
 const authStore = useAuthStore()
+const router = useRouter()
 
 // State
 const students = ref([])
@@ -415,6 +444,7 @@ const perPage = ref(10)
 // Modal
 const modalElement = ref(null)
 const photoInput = ref(null)
+const importModal = ref(null)
 let modalInstance = null
 const isEdit = ref(false)
 const formData = ref({
@@ -502,23 +532,23 @@ const loadData = async () => {
     const schoolId = authStore.user?.school_id || null
     
     const [studentsRes, gradesRes, classesRes, deptsRes, yearsRes] = await Promise.all([
-      studentsService.getAll(schoolId).catch(err => {
+      studentsService.getAll({ school_id: schoolId, limit: 1000 }).catch(err => {
         console.error('Students error:', err)
         return { data: [] }
       }),
-      gradesService.getAll(schoolId).catch(err => {
+      gradesService.getAll({ schoolId }).catch(err => {
         console.error('Grades error:', err)
         return { data: [] }
       }),
-      classesService.getAll(schoolId).catch(err => {
+      classesService.getAll({ schoolId }).catch(err => {
         console.error('Classes error:', err)
         return { data: [] }
       }),
-      departmentsService.getAll(schoolId).catch(err => {
+      departmentsService.getAll({ schoolId }).catch(err => {
         console.error('Departments error:', err)
         return { data: [] }
       }),
-      academicYearsService.getAll(schoolId).catch(err => {
+      academicYearsService.getAll({ schoolId }).catch(err => {
         console.error('Academic years error:', err)
         return { data: [] }
       })
@@ -668,6 +698,20 @@ const openModal = (student = null) => {
   modalInstance.show()
 }
 
+const openImportModal = () => {
+  if (importModal.value) {
+    importModal.value.show()
+  }
+}
+
+const handleImported = async () => {
+  // Refresh data after import
+  await fetchData()
+  if (importModal.value) {
+    importModal.value.hide()
+  }
+}
+
 const validateForm = () => {
   errors.value = {}
   
@@ -759,6 +803,13 @@ const handleDelete = async (student) => {
     console.error('Failed to delete student:', error)
     alert('Gagal menghapus data: ' + (error.response?.data?.message || error.message))
   }
+}
+
+const goToDocuments = (student) => {
+  router.push({
+    path: '/admin/student-documents',
+    query: { student_id: student.id }
+  })
 }
 
 onMounted(() => {

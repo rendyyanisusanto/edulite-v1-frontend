@@ -68,6 +68,89 @@ export const adminRoutes = [
         name: 'AdminStudents',
         component: () => import('./pages/StudentsPage.vue')
       },
+      {
+        path: 'students/:id',
+        name: 'AdminStudentDetail',
+        component: () => import('./pages/StudentDetailPage.vue')
+      },
+      // Student Documents
+      {
+        path: 'student-documents',
+        name: 'AdminStudentDocuments',
+        component: () => import('./pages/StudentDocuments.vue')
+      },
+      // Student Cards
+      {
+        path: 'student-cards',
+        name: 'AdminStudentCards',
+        component: () => import('./pages/StudentCardsPage.vue')
+      },
+      // Card Templates
+      {
+        path: 'card-templates',
+        name: 'AdminCardTemplates',
+        component: () => import('./pages/CardTemplatesPage.vue')
+      },
+      // Parent Identity
+      {
+        path: 'parent-identity',
+        name: 'AdminParentIdentity',
+        component: () => import('./pages/ParentIdentityPage.vue')
+      },
+      // Violations - Levels & Points
+      {
+        path: 'violation-points',
+        name: 'AdminViolationLevels',
+        component: () => import('./pages/ViolationLevelsPage.vue')
+      },
+      // Violations - Types
+      {
+        path: 'violation-types',
+        name: 'AdminViolationTypes',
+        component: () => import('./pages/ViolationTypesPage.vue')
+      },
+      // Violations - Actions/Sanctions
+      {
+        path: 'violation-sanctions',
+        name: 'AdminViolationActions',
+        component: () => import('./pages/ViolationActionsPage.vue')
+      },
+      // Violations - Data
+      {
+        path: 'violations-data',
+        name: 'AdminViolationsData',
+        component: () => import('./pages/ViolationsDataPage.vue')
+      },
+      // Rewards - Levels & Points
+      {
+        path: 'reward-points',
+        name: 'AdminRewardLevels',
+        component: () => import('./pages/RewardLevelsPage.vue')
+      },
+      // Rewards - Types
+      {
+        path: 'reward-types',
+        name: 'AdminRewardTypes',
+        component: () => import('./pages/RewardTypesPage.vue')
+      },
+      // Rewards - Actions
+      {
+        path: 'reward-actions',
+        name: 'AdminRewardActions',
+        component: () => import('./pages/RewardActionsPage.vue')
+      },
+      // Rewards - Data
+      {
+        path: 'rewards-data',
+        name: 'AdminRewardsData',
+        component: () => import('./pages/RewardsDataPage.vue')
+      },
+      // Point Recap
+      {
+        path: 'point-recap',
+        name: 'AdminPointRecap',
+        component: () => import('./pages/PointRecapPage.vue')
+      },
       // Student Mutations
       {
         path: 'student-mutations',

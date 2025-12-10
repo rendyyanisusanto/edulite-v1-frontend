@@ -89,6 +89,53 @@
             </transition>
           </li>
 
+          <!-- MANAJEMEN KESISWAAN Section -->
+          <li class="nav-section-title">
+            <span>MANAJEMEN KESISWAAN</span>
+          </li>
+
+          <!-- MANAJEMEN KESISWAAN Groups -->
+          <li 
+            v-for="group in studentManagementModules" 
+            :key="group.key"
+            class="nav-group"
+          >
+            <div 
+              class="nav-group-header"
+              @click="toggleGroup(group.key)"
+            >
+              <div class="group-header-content">
+                <i :class="group.icon"></i>
+                <span>{{ group.label }}</span>
+              </div>
+              <i 
+                class="bi bi-chevron-down toggle-icon"
+                :class="{ 'rotated': expandedGroups[group.key] }"
+              ></i>
+            </div>
+
+            <!-- Group Items -->
+            <transition name="collapse">
+              <ul v-show="expandedGroups[group.key]" class="nav-group-items">
+                <li 
+                  v-for="item in group.items" 
+                  :key="item.path"
+                  class="nav-group-item"
+                >
+                  <router-link 
+                    :to="item.path" 
+                    class="nav-link"
+                    :class="{ 'active': isActive(item.path) }"
+                    @click="handleMenuClick"
+                  >
+                    <i :class="item.icon"></i>
+                    <span>{{ item.label }}</span>
+                  </router-link>
+                </li>
+              </ul>
+            </transition>
+          </li>
+
           <!-- EDULITE MODULES Section -->
           <li class="nav-section-title">
             <span>EDULITE MODULES</span>
@@ -221,7 +268,8 @@ const expandedGroups = ref({
   school: true,
   students: false,
   teachers: false,
-  users: false
+  users: false,
+  student_management: false
 })
 
 const toggleGroup = (groupKey) => {
@@ -290,6 +338,128 @@ const menuGroups = computed(() => [
     items: [
       { path: '/admin/users', label: 'Data User', icon: 'bi bi-person-fill-gear' },
       { path: '/admin/roles', label: 'Role & Permission', icon: 'bi bi-shield-lock' }
+    ]
+  }
+])
+
+// Student Management Modules
+const studentManagementModules = computed(() => [
+  {
+    key: 'student_data',
+    label: 'Data Siswa',
+    icon: 'bi bi-person-lines-fill',
+    items: [
+      { path: '/admin/students', label: 'Data Induk', icon: 'bi bi-database' },
+      { path: '/admin/student-documents', label: 'Dokumen Siswa', icon: 'bi bi-file-earmark-text' },
+      { path: '/admin/student-cards', label: 'Kartu Siswa', icon: 'bi bi-credit-card-2-front' },
+      { path: '/admin/card-templates', label: 'Template Kartu', icon: 'bi bi-layout-text-window-reverse' },
+      { path: '/admin/parent-identity', label: 'Identitas Orang Tua', icon: 'bi bi-people-fill' }
+    ]
+  },
+  {
+    key: 'mutation_class',
+    label: 'Mutasi & Kelas',
+    icon: 'bi bi-arrow-left-right',
+    items: [
+      { path: '/admin/student-mutations', label: 'Mutasi Masuk', icon: 'bi bi-box-arrow-in-down' },
+      { path: '/admin/mutation-history', label: 'History Mutasi', icon: 'bi bi-journal-bookmark' },
+      { path: '/admin/class-placement-auto', label: 'Penempatan Kelas Otomatis', icon: 'bi bi-magic' },
+      { path: '/admin/class-placement-manual', label: 'Penempatan Manual', icon: 'bi bi-hand-index' },
+      { path: '/admin/class-placement-history', label: 'History Penempatan', icon: 'bi bi-clock-history' }
+    ]
+  },
+  {
+    key: 'student_permission',
+    label: 'Perizinan',
+    icon: 'bi bi-card-text',
+    items: [
+      { path: '/admin/permission-sick', label: 'Izin Sakit', icon: 'bi bi-hospital' },
+      { path: '/admin/permission-leave', label: 'Izin Pulang', icon: 'bi bi-house-door' },
+      { path: '/admin/permission-late', label: 'Izin Terlambat', icon: 'bi bi-alarm' },
+      { path: '/admin/permission-special', label: 'Izin Khusus', icon: 'bi bi-star' },
+      { path: '/admin/permission-monitoring', label: 'Status Izin (Monitoring)', icon: 'bi bi-eye' },
+      { path: '/admin/permission-recap', label: 'Rekapitulasi Izin', icon: 'bi bi-file-spreadsheet' },
+      { path: '/admin/permission-approval', label: 'Approval Perizinan', icon: 'bi bi-check-circle' }
+    ]
+  },
+  {
+    key: 'violations_bk',
+    label: 'Pelanggaran / BK',
+    icon: 'bi bi-exclamation-triangle',
+    items: [
+      { path: '/admin/violations-data', label: 'Data Pelanggaran', icon: 'bi bi-exclamation-triangle' },
+      { path: '/admin/violation-types', label: 'Jenis Pelanggaran', icon: 'bi bi-list-ul' },
+      { path: '/admin/violation-points', label: 'Poin Pelanggaran', icon: 'bi bi-hash' },
+      { path: '/admin/violation-sanctions', label: 'Tindakan / Sanksi', icon: 'bi bi-hammer' },
+      { path: '/admin/counseling-basic', label: 'Konseling', icon: 'bi bi-chat-heart' },
+      { path: '/admin/counselor-notes', label: 'Catatan Guru BK', icon: 'bi bi-journal-text' },
+      { path: '/admin/case-handling', label: 'Penanganan Kasus', icon: 'bi bi-briefcase' },
+      { path: '/admin/case-history', label: 'History Kasus', icon: 'bi bi-clock-history' },
+      { path: '/admin/point-recap', label: 'Rekapitulasi Poin', icon: 'bi bi-bar-chart' }
+    ]
+  },
+  {
+    key: 'rewards',
+    label: 'Reward / Prestasi',
+    icon: 'bi bi-trophy',
+    items: [
+      { path: '/admin/rewards-data', label: 'Data Reward', icon: 'bi bi-trophy' },
+      { path: '/admin/reward-types', label: 'Jenis Reward', icon: 'bi bi-list-stars' },
+      { path: '/admin/reward-points', label: 'Poin Reward', icon: 'bi bi-award' },
+      { path: '/admin/reward-actions', label: 'Tindak Lanjut', icon: 'bi bi-star' }
+    ]
+  },
+  {
+    key: 'counseling',
+    label: 'Konseling',
+    icon: 'bi bi-chat-heart',
+    items: [
+      { path: '/admin/counseling-schedule', label: 'Jadwal Konseling', icon: 'bi bi-calendar-event' },
+      { path: '/admin/counseling-notes', label: 'Catatan Konseling', icon: 'bi bi-clipboard' },
+      { path: '/admin/counseling-individual', label: 'Konseling Individu', icon: 'bi bi-person' },
+      { path: '/admin/counseling-group', label: 'Konseling Kelompok', icon: 'bi bi-people' },
+      { path: '/admin/counselor-recommendation', label: 'Rekomendasi Guru BK', icon: 'bi bi-lightbulb' },
+      { path: '/admin/counseling-followup', label: 'Follow Up & Monitoring', icon: 'bi bi-arrow-repeat' }
+    ]
+  },
+  {
+    key: 'student_achievement',
+    label: 'Prestasi',
+    icon: 'bi bi-trophy',
+    items: [
+      { path: '/admin/student-achievements', label: 'Prestasi Siswa', icon: 'bi bi-trophy' },
+      { path: '/admin/teacher-achievements', label: 'Prestasi Guru Pembina', icon: 'bi bi-award' },
+      { path: '/admin/competitions', label: 'Data Kompetisi', icon: 'bi bi-flag' },
+      { path: '/admin/competition-participants', label: 'Peserta Lomba', icon: 'bi bi-person-check' },
+      { path: '/admin/competition-results', label: 'Hasil Lomba', icon: 'bi bi-trophy-fill' },
+      { path: '/admin/certificates', label: 'Sertifikat & Penghargaan', icon: 'bi bi-patch-check' },
+      { path: '/admin/achievement-gallery', label: 'Galeri Dokumentasi', icon: 'bi bi-images' },
+      { path: '/admin/achievement-recap', label: 'Rekap Prestasi (Laporan)', icon: 'bi bi-file-bar-graph' }
+    ]
+  },
+  {
+    key: 'academic_attendance',
+    label: 'Absensi Akademik',
+    icon: 'bi bi-calendar-check',
+    items: [
+      { path: '/admin/daily-attendance', label: 'Absensi Harian', icon: 'bi bi-calendar-day' },
+      { path: '/admin/subject-attendance', label: 'Absensi Mapel', icon: 'bi bi-journal-check' },
+      { path: '/admin/attendance-monitoring', label: 'Monitoring Kehadiran', icon: 'bi bi-eye-fill' },
+      { path: '/admin/attendance-recap', label: 'Rekap Absensi', icon: 'bi bi-file-spreadsheet' },
+      { path: '/admin/attendance-statistics', label: 'Grafik & Statistik', icon: 'bi bi-graph-up' }
+    ]
+  },
+  {
+    key: 'student_extracurricular',
+    label: 'Ekstrakurikuler',
+    icon: 'bi bi-balloon',
+    items: [
+      { path: '/admin/extracurricular-data', label: 'Data Ekskul', icon: 'bi bi-balloon' },
+      { path: '/admin/extracurricular-members', label: 'Anggota Ekskul', icon: 'bi bi-people' },
+      { path: '/admin/extracurricular-schedule', label: 'Jadwal Ekskul', icon: 'bi bi-calendar-week' },
+      { path: '/admin/extracurricular-coaches', label: 'Pembina Ekskul', icon: 'bi bi-person-badge' },
+      { path: '/admin/extracurricular-attendance', label: 'Absensi Ekskul', icon: 'bi bi-card-checklist' },
+      { path: '/admin/extracurricular-achievements', label: 'Prestasi Ekskul', icon: 'bi bi-star-fill' }
     ]
   }
 ])
