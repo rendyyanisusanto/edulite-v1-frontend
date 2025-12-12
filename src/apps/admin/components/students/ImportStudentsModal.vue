@@ -40,16 +40,41 @@
             </div>
           </div>
 
+          <!-- Select Class -->
+          <div class="mb-4">
+            <label class="form-label fw-bold">Pilih Kelas</label>
+            <select
+              class="form-select"
+              v-model="selectedClassId"
+              :disabled="isImporting"
+            >
+              <option value="">-- Pilih Kelas --</option>
+              <option
+                v-for="classItem in classes"
+                :key="classItem.id"
+                :value="classItem.id"
+              >
+                {{ classItem.grade?.name }} - {{ classItem.name }}
+              </option>
+            </select>
+            <small class="text-muted">
+              Siswa yang diimport akan ditambahkan ke kelas yang dipilih
+            </small>
+          </div>
+
           <!-- Download Template -->
           <div class="mb-4">
             <button
               @click="downloadTemplate"
               class="btn btn-success"
-              :disabled="isDownloading"
+              :disabled="isDownloading || !selectedClassId"
             >
               <i class="bi bi-download me-2"></i>
               {{ isDownloading ? 'Downloading...' : 'Download Template Excel' }}
             </button>
+            <small class="d-block text-muted mt-2">
+              Template akan disesuaikan dengan kelas yang dipilih
+            </small>
           </div>
 
           <!-- File Upload -->
@@ -169,7 +194,7 @@
             type="button"
             class="btn btn-primary"
             @click="handleImport"
-            :disabled="!selectedFile || isImporting"
+            :disabled="!selectedFile || isImporting || !selectedClassId"
           >
             <i class="bi bi-upload me-2"></i>
             {{ isImporting ? 'Mengimpor...' : 'Import Data' }}
@@ -181,7 +206,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Modal } from 'bootstrap'
 import studentService from '../../services/studentService'
 
@@ -190,6 +215,8 @@ const emit = defineEmits(['imported'])
 const modalRef = ref(null)
 const fileInput = ref(null)
 const selectedFile = ref(null)
+const selectedClassId = ref('')
+const classes = ref([])
 const isDragOver = ref(false)
 const isImporting = ref(false)
 const isDownloading = ref(false)
@@ -245,11 +272,26 @@ const formatFileSize = (bytes) => {
   return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
 }
 
+const fetchClasses = async () => {
+  try {
+    const response = await studentService.getClasses()
+    classes.value = response.data
+  } catch (error) {
+    console.error('Error fetching classes:', error)
+    alert('Gagal memuat data kelas')
+  }
+}
+
 const downloadTemplate = async () => {
+  if (!selectedClassId.value) {
+    alert('Pilih kelas terlebih dahulu')
+    return
+  }
+
   try {
     isDownloading.value = true
-    const blob = await studentService.downloadTemplate()
-    
+    const blob = await studentService.downloadTemplate(selectedClassId.value)
+
     // Create download link
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -273,12 +315,17 @@ const handleImport = async () => {
     return
   }
 
+  if (!selectedClassId.value) {
+    alert('Pilih kelas terlebih dahulu')
+    return
+  }
+
   try {
     isImporting.value = true
-    const response = await studentService.importFromExcel(selectedFile.value)
-    
+    const response = await studentService.importFromExcel(selectedFile.value, selectedClassId.value)
+
     importResults.value = response.results
-    
+
     if (response.results.errors === 0) {
       alert('Import berhasil! ' + response.results.success + ' siswa telah ditambahkan.')
       emit('imported')
@@ -289,15 +336,15 @@ const handleImport = async () => {
     console.error('Error importing students:', error)
     const errorData = error.response?.data
     let errorMsg = 'Gagal mengimpor data: ' + (errorData?.message || error.message)
-    
+
     if (errorData?.error) {
       errorMsg += '\n\n' + errorData.error
     }
-    
+
     if (errorData?.hint) {
       errorMsg += '\n\n💡 ' + errorData.hint
     }
-    
+
     alert(errorMsg)
   } finally {
     isImporting.value = false
@@ -305,6 +352,7 @@ const handleImport = async () => {
 }
 
 const show = () => {
+  fetchClasses()
   const modal = new Modal(modalRef.value)
   modal.show()
 }
@@ -316,6 +364,7 @@ const hide = () => {
   }
   // Reset state
   removeFile()
+  selectedClassId.value = ''
   importResults.value = null
   showErrors.value = false
 }

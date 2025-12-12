@@ -706,7 +706,7 @@ const openImportModal = () => {
 
 const handleImported = async () => {
   // Refresh data after import
-  await fetchData()
+  await loadData()
   if (importModal.value) {
     importModal.value.hide()
   }

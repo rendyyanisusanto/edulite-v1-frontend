@@ -192,6 +192,7 @@ import { ref, computed, onMounted } from 'vue'
 import { Modal } from 'bootstrap'
 import { useAuthStore } from '../../auth/store/authStore'
 import violationService from '../services/violationService'
+import Swal from 'sweetalert2'
 
 const authStore = useAuthStore()
 const schoolId = computed(() => authStore.user?.school_id)
@@ -338,30 +339,77 @@ const handleSubmit = async () => {
   try {
     if (isEditMode.value) {
       await violationService.updateAction(editingId.value, form.value)
-      alert('Tindakan/sanksi berhasil diupdate')
+      await Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: 'Tindakan/sanksi berhasil diupdate',
+        timer: 2000,
+        showConfirmButton: false,
+        position: 'top-end',
+        toast: true
+      })
     } else {
       await violationService.createAction(form.value)
-      alert('Tindakan/sanksi berhasil ditambahkan')
+      await Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: 'Tindakan/sanksi berhasil ditambahkan',
+        timer: 2000,
+        showConfirmButton: false,
+        position: 'top-end',
+        toast: true
+      })
     }
     modalInstance.hide()
     loadViolationActions()
   } catch (error) {
     console.error('Error saving violation action:', error)
-    alert(error.response?.data?.message || 'Gagal menyimpan data')
+    await Swal.fire({
+      icon: 'error',
+      title: 'Gagal',
+      text: error.response?.data?.message || 'Gagal menyimpan data',
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#dc2626'
+    })
   } finally {
     submitting.value = false
   }
 }
 
 const confirmDelete = async (action) => {
-  if (confirm(`Data "${action.action_name}" akan dihapus permanen. Lanjutkan?`)) {
+  const result = await Swal.fire({
+    title: 'Konfirmasi Hapus',
+    html: `Data "<strong>${action.action_name}</strong>" akan dihapus permanen. Lanjutkan?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Ya, Hapus',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6c757d'
+  })
+
+  if (result.isConfirmed) {
     try {
       await violationService.deleteAction(action.id)
-      alert('Tindakan/sanksi berhasil dihapus')
+      await Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: 'Tindakan/sanksi berhasil dihapus',
+        timer: 2000,
+        showConfirmButton: false,
+        position: 'top-end',
+        toast: true
+      })
       loadViolationActions()
     } catch (error) {
       console.error('Error deleting violation action:', error)
-      alert('Gagal menghapus data')
+      await Swal.fire({
+        icon: 'error',
+        title: 'Gagal',
+        text: 'Gagal menghapus data',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#dc2626'
+      })
     }
   }
 }

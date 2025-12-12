@@ -347,6 +347,7 @@ import { Modal } from 'bootstrap'
 import { useAuthStore } from '../../auth/store/authStore'
 import violationService from '../services/violationService'
 import studentService from '../services/studentService'
+import Swal from 'sweetalert2'
 
 const authStore = useAuthStore()
 const schoolId = computed(() => authStore.user?.school_id)
@@ -586,11 +587,23 @@ const showApproveModal = (violation) => {
 
 const handleSubmit = async () => {
   if (selectedStudents.value.length === 0) {
-    alert('Pilih minimal 1 siswa')
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Validasi Gagal',
+      text: 'Pilih minimal 1 siswa',
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#dc2626'
+    })
     return
   }
   if (!form.value.type_id) {
-    alert('Pilih jenis pelanggaran')
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Validasi Gagal',
+      text: 'Pilih jenis pelanggaran',
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#dc2626'
+    })
     return
   }
 
@@ -615,14 +628,14 @@ const handleSubmit = async () => {
           location: form.value.location || null,
           description: form.value.description || null
         }
-        
+
         console.log('Creating violation for student:', student.name, violationData)
         console.log('Access token:', localStorage.getItem('access_token'))
         console.log('User data:', authStore.user)
-        
+
         const result = await violationService.createViolation(violationData)
         console.log('Violation created:', result)
-        
+
         // Upload evidence if exists
         if (form.value.evidence_file && result.id) {
           const formData = new FormData()
@@ -633,7 +646,7 @@ const handleSubmit = async () => {
             console.error('Error uploading evidence:', uploadError)
           }
         }
-        
+
         successCount++
       } catch (error) {
         console.error(`Error saving violation for student ${student.name}:`, error)
@@ -645,17 +658,35 @@ const handleSubmit = async () => {
     }
 
     if (successCount > 0) {
-      alert(`Berhasil menyimpan ${successCount} pelanggaran${errorCount > 0 ? `, ${errorCount} gagal` : ''}`)
+      await Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        html: `Berhasil menyimpan <strong>${successCount}</strong> pelanggaran${errorCount > 0 ? `, ${errorCount} gagal` : ''}`,
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#16a34a'
+      })
       formModalInstance.hide()
       loadViolations()
     } else {
-      const detailMsg = errorMessages.length > 0 ? '\n\nDetail:\n' + errorMessages.join('\n') : ''
-      alert('Semua proses penyimpanan gagal!' + detailMsg)
+      const detailMsg = errorMessages.length > 0 ? '<br><br>Detail:<br>' + errorMessages.join('<br>') : ''
+      await Swal.fire({
+        icon: 'error',
+        title: 'Gagal',
+        html: 'Semua proses penyimpanan gagal!' + detailMsg,
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#dc2626'
+      })
     }
   } catch (error) {
     console.error('Error in bulk submit:', error)
     console.error('Error response:', error.response?.data)
-    alert('Terjadi kesalahan: ' + (error.response?.data?.message || error.message))
+    await Swal.fire({
+      icon: 'error',
+      title: 'Terjadi Kesalahan',
+      text: error.response?.data?.message || error.message,
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#dc2626'
+    })
   } finally {
     submitting.value = false
   }
@@ -663,32 +694,77 @@ const handleSubmit = async () => {
 
 const handleApprove = async () => {
   if (!approvalForm.value.status) {
-    alert('Pilih status terlebih dahulu')
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Validasi Gagal',
+      text: 'Pilih status terlebih dahulu',
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#dc2626'
+    })
     return
   }
   submitting.value = true
   try {
     await violationService.approveViolation(approvingId.value, approvalForm.value)
-    alert('Pelanggaran berhasil diproses')
+    await Swal.fire({
+      icon: 'success',
+      title: 'Berhasil',
+      text: 'Pelanggaran berhasil diproses',
+      timer: 2000,
+      showConfirmButton: false,
+      position: 'top-end',
+      toast: true
+    })
     approveModalInstance.hide()
     loadViolations()
   } catch (error) {
     console.error('Error approving violation:', error)
-    alert('Gagal memproses data')
+    await Swal.fire({
+      icon: 'error',
+      title: 'Gagal',
+      text: 'Gagal memproses data',
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#dc2626'
+    })
   } finally {
     submitting.value = false
   }
 }
 
 const confirmDelete = async (violation) => {
-  if (confirm('Data akan dihapus permanen. Lanjutkan?')) {
+  const result = await Swal.fire({
+    title: 'Konfirmasi Hapus',
+    text: 'Data pelanggaran akan dihapus permanen. Lanjutkan?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Ya, Hapus',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6c757d'
+  })
+
+  if (result.isConfirmed) {
     try {
       await violationService.deleteViolation(violation.id)
-      alert('Pelanggaran berhasil dihapus')
+      await Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: 'Pelanggaran berhasil dihapus',
+        timer: 2000,
+        showConfirmButton: false,
+        position: 'top-end',
+        toast: true
+      })
       loadViolations()
     } catch (error) {
       console.error('Error deleting violation:', error)
-      alert('Gagal menghapus data')
+      await Swal.fire({
+        icon: 'error',
+        title: 'Gagal',
+        text: 'Gagal menghapus data',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#dc2626'
+      })
     }
   }
 }

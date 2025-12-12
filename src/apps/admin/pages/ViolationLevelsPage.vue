@@ -209,6 +209,7 @@ import { ref, computed, onMounted } from 'vue'
 import { Modal } from 'bootstrap'
 import { useAuthStore } from '../../auth/store/authStore'
 import violationService from '../services/violationService'
+import Swal from 'sweetalert2'
 
 const authStore = useAuthStore()
 const schoolId = computed(() => authStore.user?.school_id)
@@ -334,7 +335,13 @@ const showEditModal = (level) => {
 
 const handleSubmit = async () => {
   if (form.value.min_point >= form.value.max_point) {
-    alert('Max poin harus lebih besar dari min poin')
+    await Swal.fire({
+      icon: 'warning',
+      title: 'Validasi Gagal',
+      text: 'Max poin harus lebih besar dari min poin',
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#dc2626'
+    })
     return
   }
 
@@ -342,30 +349,77 @@ const handleSubmit = async () => {
   try {
     if (isEditMode.value) {
       await violationService.updateLevel(editingId.value, form.value)
-      alert('Tingkat pelanggaran berhasil diupdate')
+      await Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: 'Tingkat pelanggaran berhasil diupdate',
+        timer: 2000,
+        showConfirmButton: false,
+        position: 'top-end',
+        toast: true
+      })
     } else {
       await violationService.createLevel(form.value)
-      alert('Tingkat pelanggaran berhasil ditambahkan')
+      await Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: 'Tingkat pelanggaran berhasil ditambahkan',
+        timer: 2000,
+        showConfirmButton: false,
+        position: 'top-end',
+        toast: true
+      })
     }
     modalInstance.hide()
     loadViolationLevels()
   } catch (error) {
     console.error('Error saving violation level:', error)
-    alert(error.response?.data?.message || 'Gagal menyimpan data')
+    await Swal.fire({
+      icon: 'error',
+      title: 'Gagal',
+      text: error.response?.data?.message || 'Gagal menyimpan data',
+      confirmButtonText: 'OK',
+      confirmButtonColor: '#dc2626'
+    })
   } finally {
     submitting.value = false
   }
 }
 
 const confirmDelete = async (level) => {
-  if (confirm(`Data "${level.name}" akan dihapus permanen. Lanjutkan?`)) {
+  const result = await Swal.fire({
+    title: 'Konfirmasi Hapus',
+    html: `Data "<strong>${level.name}</strong>" akan dihapus permanen. Lanjutkan?`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Ya, Hapus',
+    cancelButtonText: 'Batal',
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6c757d'
+  })
+
+  if (result.isConfirmed) {
     try {
       await violationService.deleteLevel(level.id)
-      alert('Tingkat pelanggaran berhasil dihapus')
+      await Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: 'Tingkat pelanggaran berhasil dihapus',
+        timer: 2000,
+        showConfirmButton: false,
+        position: 'top-end',
+        toast: true
+      })
       loadViolationLevels()
     } catch (error) {
       console.error('Error deleting violation level:', error)
-      alert('Gagal menghapus data')
+      await Swal.fire({
+        icon: 'error',
+        title: 'Gagal',
+        text: 'Gagal menghapus data',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#dc2626'
+      })
     }
   }
 }

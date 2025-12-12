@@ -77,15 +77,7 @@
               </option>
             </select>
           </div>
-          <div class="col-md-2">
-            <label class="form-label">Semester</label>
-            <select v-model="filters.semester" class="form-select" @change="loadData">
-              <option value="">Pilih Semester</option>
-              <option value="1">Semester 1</option>
-              <option value="2">Semester 2</option>
-            </select>
-          </div>
-          <div class="col-md-2">
+            <div class="col-md-2">
             <label class="form-label">Tingkat</label>
             <select v-model="filters.grade_id" class="form-select" @change="loadData">
               <option value="">Semua Tingkat</option>
@@ -111,10 +103,10 @@
               <option value="100">100</option>
             </select>
           </div>
-          <div class="col-md-1">
+          <div class="col-md-2">
             <label class="form-label">&nbsp;</label>
             <button class="btn btn-secondary w-100" @click="resetFilters">
-              <i class="bi bi-arrow-clockwise"></i>
+              <i class="bi bi-arrow-clockwise"></i> Reset
             </button>
           </div>
         </div>
@@ -330,15 +322,7 @@
                 </option>
               </select>
             </div>
-            <div class="mb-3">
-              <label class="form-label">Semester <span class="text-danger">*</span></label>
-              <select v-model="calculateForm.semester" class="form-select" required>
-                <option value="">Pilih Semester</option>
-                <option value="1">Semester 1</option>
-                <option value="2">Semester 2</option>
-              </select>
-            </div>
-            <div class="alert alert-info">
+              <div class="alert alert-info">
               <i class="bi bi-info-circle me-2"></i>
               Proses ini akan menghitung ulang rekapitulasi poin untuk semua siswa. Proses mungkin memakan waktu beberapa menit.
             </div>
@@ -494,6 +478,7 @@ import pointRecapService from '../services/pointRecapService';
 import academicYearsService from '../services/academicYearsService';
 import gradesService from '../services/gradesService';
 import classesService from '../services/classesService';
+import Swal from 'sweetalert2';
 
 // State
 const loading = ref(false);
@@ -512,7 +497,6 @@ const detailData = ref(null);
 
 const filters = ref({
   academic_year_id: '',
-  semester: '',
   grade_id: '',
   class_id: '',
   limit: 50,
@@ -520,8 +504,7 @@ const filters = ref({
 });
 
 const calculateForm = ref({
-  academic_year_id: '',
-  semester: ''
+  academic_year_id: ''
 });
 
 const pagination = ref({
@@ -571,16 +554,17 @@ const loadAcademicYears = async () => {
     // Auto-select first academic year if available and no year selected
     if (academicYears.value.length > 0 && !filters.value.academic_year_id) {
       filters.value.academic_year_id = academicYears.value[0].id;
-      // Auto-select semester 1 as default
-      if (!filters.value.semester) {
-        filters.value.semester = '1';
-      }
       // Load data after auto-selecting
       await loadDashboardStats();
     }
   } catch (error) {
     console.error('Error loading academic years:', error);
-    alert('Gagal memuat data tahun ajaran');
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal Memuat Data',
+      text: 'Gagal memuat data tahun ajaran',
+      confirmButtonColor: '#dc2626'
+    });
   }
 };
 
@@ -603,7 +587,7 @@ const loadClasses = async () => {
 };
 
 const loadData = async () => {
-  if (!filters.value.academic_year_id || !filters.value.semester) {
+  if (!filters.value.academic_year_id) {
     // Don't show alert on initial load, just return
     return;
   }
@@ -626,21 +610,25 @@ const loadData = async () => {
     await loadDashboardStats();
   } catch (error) {
     console.error('Error loading data:', error);
-    alert(error.response?.data?.message || 'Gagal memuat data');
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal Memuat Data',
+      text: error.response?.data?.message || 'Gagal memuat data',
+      confirmButtonColor: '#dc2626'
+    });
   } finally {
     loading.value = false;
   }
 };
 
 const loadDashboardStats = async () => {
-  if (!filters.value.academic_year_id || !filters.value.semester) {
+  if (!filters.value.academic_year_id) {
     return;
   }
-  
+
   try {
     const statsResponse = await pointRecapService.getDashboardStats({
-      academic_year_id: filters.value.academic_year_id,
-      semester: filters.value.semester
+      academic_year_id: filters.value.academic_year_id
     });
     dashboardStats.value = statsResponse.data || {};
   } catch (error) {
@@ -652,7 +640,6 @@ const loadDashboardStats = async () => {
 const resetFilters = () => {
   filters.value = {
     academic_year_id: '',
-    semester: '',
     grade_id: '',
     class_id: '',
     limit: 50,
@@ -672,24 +659,51 @@ const changePage = (page) => {
 };
 
 const handleCalculate = async () => {
-  if (!calculateForm.value.academic_year_id || !calculateForm.value.semester) {
-    alert('Silakan lengkapi form terlebih dahulu');
+  if (!calculateForm.value.academic_year_id) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Form Belum Lengkap',
+      text: 'Silakan pilih tahun ajaran terlebih dahulu',
+      confirmButtonColor: '#dc2626'
+    });
     return;
   }
 
-  if (!confirm('Apakah Anda yakin ingin menghitung ulang rekapitulasi?')) {
+  const result = await Swal.fire({
+    title: 'Konfirmasi Perhitungan Ulang',
+    text: 'Apakah Anda yakin ingin menghitung ulang rekapitulasi?',
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonColor: '#dc2626',
+    cancelButtonColor: '#6b7280',
+    confirmButtonText: 'Ya, Hitung Ulang',
+    cancelButtonText: 'Batal'
+  });
+
+  if (!result.isConfirmed) {
     return;
   }
 
   calculating.value = true;
   try {
     await pointRecapService.calculatePointRecap(calculateForm.value);
-    alert('Rekapitulasi berhasil dihitung');
+    Swal.fire({
+      icon: 'success',
+      title: 'Berhasil',
+      text: 'Rekapitulasi berhasil dihitung',
+      timer: 2000,
+      showConfirmButton: false
+    });
     showCalculateModal.value = false;
     loadData();
   } catch (error) {
     console.error('Error calculating recap:', error);
-    alert(error.response?.data?.message || 'Gagal menghitung rekapitulasi');
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal Menghitung',
+      text: error.response?.data?.message || 'Gagal menghitung rekapitulasi',
+      confirmButtonColor: '#dc2626'
+    });
   } finally {
     calculating.value = false;
   }
@@ -698,26 +712,35 @@ const handleCalculate = async () => {
 const showDetail = async (item) => {
   try {
     const response = await pointRecapService.getStudentPointDetail(item.student_id, {
-      academic_year_id: filters.value.academic_year_id,
-      semester: filters.value.semester
+      academic_year_id: filters.value.academic_year_id
     });
     detailData.value = response.data;
     showDetailModal.value = true;
   } catch (error) {
     console.error('Error loading detail:', error);
-    alert('Gagal memuat detail');
+    Swal.fire({
+      icon: 'error',
+      title: 'Gagal Memuat Detail',
+      text: 'Gagal memuat detail siswa',
+      confirmButtonColor: '#dc2626'
+    });
   }
 };
 
 const handleExport = async () => {
-  if (!filters.value.academic_year_id || !filters.value.semester) {
-    alert('Silakan pilih tahun ajaran dan semester terlebih dahulu');
+  if (!filters.value.academic_year_id) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Filter Belum Dipilih',
+      text: 'Silakan pilih tahun ajaran terlebih dahulu',
+      confirmButtonColor: '#dc2626'
+    });
     return;
   }
 
   try {
     const response = await pointRecapService.exportPointRecap(filters.value);
-    
+
     // Convert to CSV
     const csv = convertToCSV(response.data);
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -726,11 +749,22 @@ const handleExport = async () => {
     link.href = url;
     link.download = `rekapitulasi-poin-${Date.now()}.csv`;
     link.click();
-    
-    alert('Data berhasil diekspor');
+
+    Swal.fire({
+      icon: 'success',
+      title: 'Export Berhasil',
+      text: 'Data berhasil diekspor',
+      timer: 2000,
+      showConfirmButton: false
+    });
   } catch (error) {
     console.error('Error exporting:', error);
-    alert('Gagal mengekspor data');
+    Swal.fire({
+      icon: 'error',
+      title: 'Export Gagal',
+      text: 'Gagal mengekspor data',
+      confirmButtonColor: '#dc2626'
+    });
   }
 };
 

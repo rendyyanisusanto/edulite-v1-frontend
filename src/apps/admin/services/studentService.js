@@ -91,14 +91,25 @@ class StudentsService {
   }
 
   /**
+   * Get classes for import
+   * @returns {Promise<Object>} Classes data
+   */
+  async getClasses() {
+    const response = await apiClient.get('/api/students/classes')
+    return response.data
+  }
+
+  /**
    * Import students from Excel file
    * @param {File} file - Excel file
+   * @param {number} classId - Class ID
    * @returns {Promise<Object>} Import result
    */
-  async importFromExcel(file) {
+  async importFromExcel(file, classId) {
     const formData = new FormData()
     formData.append('file', file)
-    
+    formData.append('class_id', classId)
+
     const response = await apiClient.post(
       '/api/students/import',
       formData,
@@ -113,10 +124,11 @@ class StudentsService {
 
   /**
    * Download Excel template
+   * @param {number} classId - Class ID
    * @returns {Promise<Blob>} Excel file blob
    */
-  async downloadTemplate() {
-    const response = await apiClient.get('/api/students/template/download', {
+  async downloadTemplate(classId) {
+    const response = await apiClient.get(`/api/students/template/download?class_id=${classId}`, {
       responseType: 'blob'
     })
     return response.data
